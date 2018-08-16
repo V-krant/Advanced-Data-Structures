@@ -1,0 +1,201 @@
+//Prim's Algorithm
+
+#include <iostream>
+#include <vector>
+#include <fstream>
+using namespace std;
+
+class e_node {	//stands for edge node
+public:
+	int nb;		//the neighbor of a currently considered node
+	int weight; //weight of the edge to the above neighbor
+	e_node() {}	//constructor
+};
+
+class rt_node { //To store the output edges
+public:
+	int to;		//end of an edge
+	int from;	//start of an edge
+	int wt;		//cost to a node
+	int checked;
+	rt_node() { from = -1; to = -1; wt = 9999;  checked = 0; }
+};
+
+class h_node { //stands for heap_node
+public:
+	int id;
+	int cost;
+	int from;
+	h_node() { id = -1; from = -1; cost = 9999; }
+	h_node(int i, int j,int k) { id = i; from = k; cost = j; }
+	bool operator<(h_node h) { return (cost < h.cost); }
+};
+
+void set_up(vector<h_node> & heap, int &start);	//Initialize the heap
+void heap_adjust_up(vector<rt_node> &rt, vector<h_node> & heap, int &n); //Sort the min heap when an edge's weight is changed
+void heap_adjust_down(vector<rt_node> & rt, vector<h_node> & heap);		 //Sort the min heap when the root is removed
+void heap_op(vector<vector<e_node>> & graph, vector<rt_node> & rt, vector<h_node> &heap, int start);
+
+int main() {
+
+	ifstream in("text3.txt");
+	int n, e; //n: num of nodes ; e: num of edges
+	in >> n >> e;
+	vector<e_node> ve;
+	vector<vector<e_node> > graph(n, ve);
+	e_node e1;
+	e_node e2;
+	e_node start;
+	start.weight = 9999;
+	int n1, n2, w;
+	for (int i = 0; i < e; i++) {
+		in >> n1 >> n2 >> w;
+		e1.nb = n2;
+		e2.nb = n1;
+		e2.weight = w;
+		e1.weight = w;
+		if (e2.weight < start.weight) {
+			start.weight = e2.weight;
+			start.nb = e2.nb;
+		}
+		graph[n1].push_back(e1);
+		graph[n2].push_back(e2);
+	}
+	in.close();
+
+	vector<rt_node> rt(n-1); 
+	vector<h_node> heap(n);
+	set_up(heap, start.nb);
+	heap_op(graph, rt, heap,start.nb);
+
+	for (int i = 0; i < n-1; i++) {
+
+		cout << rt[i].from << " " << rt[i].to << " " << rt[i].wt << endl;
+	}
+	getchar();
+	getchar();
+	return 0;
+}
+
+void set_up(vector<h_node> & heap, int &start) {
+
+	for (size_t i = 0; i < heap.size(); i++) {
+		heap[i].id = i;
+	}
+	heap[start].id = heap[(heap.size() - 1)].id;
+	heap.pop_back();
+}
+
+void heap_adjust_down(vector<rt_node> & rt, vector<h_node> & heap) {
+
+	h_node temp;
+	for (int i = 0; ((2 * i) + 1) < heap.size(); i++) {
+		if (heap.size() > (2 * i) + 2) {
+			if (heap[(2 * i) + 1] < heap[i] || heap[(2 * i) + 2] < heap[i]) {
+				temp.id = heap[i].id;
+				temp.cost = heap[i].cost;
+				temp.from = heap[i].from;
+				if (heap[(2 * i) + 1] < heap[(2 * i) + 2]) {
+					heap[i].id = heap[(2 * i) + 1].id;
+					heap[i].cost = heap[(2 * i) + 1].cost;
+					heap[i].from = heap[(2 * i) + 1].from;
+					heap[(2 * i) + 1].id = temp.id;
+					heap[(2 * i) + 1].cost = temp.cost;
+					heap[(2 * i) + 1].from = temp.from;
+				}
+				else {
+					heap[i].id = heap[(2 * i) + 2].id;
+					heap[i].cost = heap[(2 * i) + 2].cost;
+					heap[i].from = heap[(2 * i) + 2].from;
+					heap[(2 * i) + 2].id = temp.id;
+					heap[(2 * i) + 2].cost = temp.cost;
+					heap[(2 * i) + 2].from = temp.from;
+				}
+			}
+		}
+		else if (heap[(2 * i) + 1] < heap[i])
+		{
+			temp.id = heap[i].id;
+			temp.cost = heap[i].cost;
+			temp.from = heap[i].from;
+			heap[i].id = heap[(2 * i) + 1].id;
+			heap[i].from = heap[(2 * i) + 1].from;
+			heap[i].cost = heap[(2 * i) + 1].cost;
+			heap[(2 * i) + 1].id = temp.id;
+			heap[(2 * i) + 1].from = temp.from;
+			heap[(2 * i) + 1].cost = temp.cost;
+		}
+	}
+}
+
+void heap_adjust_up(vector<rt_node> & rt, vector<h_node> & heap, int &n) {
+
+	h_node temp;
+	for (int i = n; i > 0; i--) {
+		if (heap[i].cost < heap[(i - 1) / 2].cost) {
+			temp.id = heap[i].id;
+			temp.cost = heap[i].cost;
+			temp.from = heap[i].from;
+			heap[i].id = heap[(i - 1) / 2].id;
+			heap[i].cost = heap[(i - 1) / 2].cost;
+			heap[i].from = heap[(i - 1) / 2].from;
+			heap[(i - 1) / 2].id = temp.id;
+			heap[(i - 1) / 2].cost = temp.cost;
+			heap[(i - 1) / 2].from = temp.from;
+		}
+	}
+}
+
+void heap_op(vector<vector<e_node>> & graph, vector<rt_node> & rt, vector<h_node> &heap, int start) {
+	
+	vector<e_node>::iterator it1;
+	it1 = graph[start].begin();
+	while (it1 != graph[start].end()) {
+			for (int i = 0; i < heap.size(); i++) {
+				if(heap[i].id== it1->nb && heap[i].cost >(it1->weight)){
+				heap[i].cost = it1->weight;
+				heap[i].from = start;
+				heap_adjust_up(rt, heap, i);
+				break;
+			}
+		}			
+		it1++;
+	}
+	for (int node = 0; node < rt.size(); node++) {
+		h_node small;
+		vector<e_node>::iterator it1;
+		small = heap[0];
+		rt[node].checked = 1;
+		rt[node].from = small.from;
+		rt[node].to = small.id;
+		rt[node].wt = small.cost;
+		heap[0].id = heap[(heap.size() - 1)].id;
+		heap[0].cost = heap[(heap.size() - 1)].cost;
+		heap[0].from = heap[(heap.size() - 1)].from;
+		heap.pop_back();
+		heap_adjust_down(rt, heap);
+		if (heap.size() != 0) {
+			it1 = graph[small.id].begin();
+			while (it1 != graph[small.id].end()) {
+				int check=0;
+				for (size_t i = 0; i < rt.size(); i++)
+				{
+					if (rt[i].to == it1->nb) {
+						check = 1;
+					}
+				}
+				if (check == 0) {
+					for (int i = 0; i < heap.size(); i++) {
+						if (heap[i].id == it1->nb && heap[i].cost > (it1->weight)) {
+							heap[i].cost = it1->weight;
+							heap[i].from = small.id;
+							heap_adjust_up(rt, heap, i);
+							break;
+						}
+					}
+				}
+				it1++;
+			}
+		}
+	}
+}
