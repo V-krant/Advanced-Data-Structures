@@ -1,4 +1,4 @@
-Sparse Matrix Operation -- Applicaiton of 2-D linked lists  
+//Sparse Matrix Operation -- Applicaiton of 2-D linked lists  
 
 #include <iostream>
 #include <vector>
@@ -13,8 +13,8 @@ public:
 	node * c_next;
 	node() { value = -9999; r_position = c_position = -1; r_next = c_next = nullptr; }
 	node(int v, int r, int c) { value = v; r_position = r; c_position = c; r_next = c_next = nullptr; }
-
 };
+
 class my_matrix {
 public:
 	int num_rows;
@@ -22,7 +22,8 @@ public:
 	vector<node *> r_vec;
 	vector<node *> c_vec;
 
-	my_matrix(){}
+
+	my_matrix() {}
 	my_matrix(int r, int c);
 	//Initialize a matrix of rows and c cols.
 
@@ -62,6 +63,207 @@ my_matrix::my_matrix(int r, int c, int n, int k) {
 }
 
 
+void my_matrix::add_node(int v, int r, int c) {
+	node *p = r_vec[r], *temp = nullptr,*q=c_vec[c],*tempc=nullptr;
+	int add = 0;
+	while (p != nullptr) {	//for row vector 
+		if (p == r_vec[r] && p->c_position == c) {
+			add = 1;
+			if (v == 0) {
+				r_vec[r] = p->r_next;
+				break;
+			}
+			else {
+				p->value = v;
+				break;
+			}
+		}
+		if (p->c_position < c) {
+			if (p->r_next != nullptr) {
+				temp = p->r_next;
+				if (temp->c_position == c) {
+					add = 1;
+					if (v == 0) {
+						p->r_next = temp->r_next;
+						break;
+					}
+					else {
+						temp->value = v;
+						break;
+					}
+				}
+			}
+		}
+		p = p->r_next;
+	}
+
+	while (q != nullptr) {	//for column vector
+		if (q == c_vec[c] && q->r_position == r) {
+			add = 1;
+			if (v == 0) {
+				c_vec[c] = q->c_next;
+				break;
+			}
+			else {
+				q->value = v;
+				break;
+			}
+		}
+		if (q->r_position < r) {
+			if (q->c_next != nullptr) {
+				tempc = q->c_next;
+				if (tempc->r_position == r) {
+					add = 1;
+					if (v == 0) {
+						q->c_next = tempc->c_next;
+						break;
+					}
+					else {
+						tempc->value = v;
+						break;
+					}
+				}
+			}
+		}
+		q = q->c_next;
+	}
+
+	if (add == 0 && v!=0) {
+		p = r_vec[r];	//for row vector
+		node *n = new node(v, r, c);
+		if (p == nullptr) {
+			r_vec[r] = n;
+		}
+		else {
+			while (p != nullptr) {
+				if (p->c_position < c) {
+					if (p->r_next != nullptr) {
+						temp = p->r_next;
+						if (temp->c_position > c) {
+							p->r_next = n;
+							n->r_next = temp;
+							break;
+						}
+					}
+					else {
+						p->r_next = n;
+						break;
+					}
+				}
+				else {
+					r_vec[r] = n;
+					n->r_next = p;
+					break;
+				}
+				p = p->r_next;
+			}
+		}
+		q = c_vec[c];	//for column vector
+	
+		if (q == nullptr) {
+			c_vec[c] = n;
+		}
+		else {
+			while (q != nullptr) {
+				if (q->r_position < r) {
+					if (q->c_next != nullptr) {
+						temp = q->c_next;
+						if (temp->r_position > r) {
+							q->c_next = n;
+							n->c_next = temp;
+							break;
+						}
+					}
+					else {
+						q->c_next = n;
+						break;
+					}
+				}
+				else {
+					c_vec[c] = n;
+					n->c_next = q;
+					break;
+				}
+				q = q->c_next;
+			}
+		}
+	}
+
+
+}
+
+
+my_matrix my_matrix::operator+(my_matrix M) {
+	my_matrix add(num_rows, num_cols);
+		if (num_rows != M.num_rows || num_cols!=M.num_cols) {
+			cout << "Matrix dimensions are not equal";
+		}
+		else {
+			
+			node *m1, *m2;
+			for (int i = 0; i < num_rows; i++) {
+				m1 = r_vec[i];
+				m2 = M.r_vec[i];
+			while (m1 != nullptr || m2 != nullptr) {
+				if (m1 == nullptr) {
+					add.add_node(m2->value, m2->r_position, m2->c_position);
+					m2 = m2->r_next;
+				}
+				else if (m2 == nullptr) {
+					add.add_node(m1->value, m1->r_position, m1->c_position);
+					m1 = m1->r_next;
+				}
+				else if (m1->c_position == m2->c_position) {
+					add.add_node(m1->value + m2->value,m1->r_position,m1->c_position);
+					m1 = m1->r_next;
+					m2 = m2->r_next;
+				}
+				else if(m1->c_position < m2->c_position){
+					add.add_node(m1->value, m1->r_position, m1->c_position);
+					m1 = m1->r_next;
+				}
+				else {
+					add.add_node(m2->value, m2->r_position, m2->c_position);
+					m2 = m2->r_next;
+				}	
+			}
+		}
+	}
+	return add;
+}
+
+
+my_matrix my_matrix::operator*(my_matrix M) {
+	
+	my_matrix mul(num_rows, M.num_cols);
+	int prod = 0;
+	if (num_cols == M.num_rows) {
+		for (int i = 0; i < num_rows; i++) {
+			for (int j = 0; j < M.num_cols; j++) {
+				node *m1 = r_vec[i], *m2 = M.c_vec[j];
+				prod = 0;
+				while (m1 != nullptr) {
+					while (m2 != nullptr) {
+						if (m1->c_position == m2->r_position) {
+							prod = prod + (m1->value*m2->value);
+							break;
+						}
+						m2 = m2->c_next;
+					}
+					m1 = m1->r_next;
+					m2 = M.c_vec[j];
+				}
+				mul.add_node(prod, i, j);
+			}
+		}
+		return mul;
+	}
+	else {
+		cout << endl << "Cannot multiply the two vectors" << endl;
+		return mul;
+	}
+}
+
 
 void my_matrix::print() {
 	cout << endl;
@@ -74,6 +276,7 @@ void my_matrix::print() {
 		}
 	}
 }
+
 
 
 
